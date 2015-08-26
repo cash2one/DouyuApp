@@ -43,13 +43,14 @@ class Application(tornado.web.Application):
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
             static_path=os.path.join(os.path.dirname(__file__), "static"),
             xsrf_cookies=True,
+            debug=True,
         )
         tornado.web.Application.__init__(self, handlers, **settings)
 
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render("index.html", messages=ChatSocketHandler.cache)
+        self.render("index.html")
 
 class ChatSocketHandler(tornado.websocket.WebSocketHandler):
     waiters = set()
