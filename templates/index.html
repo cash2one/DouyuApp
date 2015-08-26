@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>DouyuTv</title>
+    <link rel="stylesheet" href="{{ static_url("douyu.css") }}" type="text/css">
+</head>
+
+<body>
+    <div id="body">
+        <form action="/a/message/new" method="post" id="messageform">
+           <input id="message" name="rtmp" style="width:500px"/>
+           <input id="message" name="code" style="width:500px"/>
+           <input type="submit"/>
+        </form>
+    </div>
+    <script src="{{ static_url("jquery.min.js") }}" type="text/javascript"></script>
+    <script src="{{ static_url("douyu.js") }}" type="text/javascript"></script>
+</body>
+
+</html>
