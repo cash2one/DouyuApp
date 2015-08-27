@@ -55,7 +55,7 @@ class FFmpegManager(object):
         return os.path.join(self.DOUYU_RTMP, self.DOUYU_Code)
 
     @classmethod
-    def newCommand(self, src, rtmp):
+    def newCommand(cls, src, rtmp):
         return "ffmpeg -re -i \"%s\" -vcodec copy -acodec copy -f flv \"%s\"" % (src, rtmp)
      
     @classmethod
