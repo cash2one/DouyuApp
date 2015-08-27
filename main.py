@@ -52,6 +52,7 @@ class MainHandler(tornado.web.RequestHandler):
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
     waiters = set()
     cache = []
+    obj = None
 
     def get_compression_options(self):
         # Non-None enables compression with default options.
