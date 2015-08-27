@@ -41,47 +41,41 @@ class FFmpegManager(object):
     
     DOUYU_RTMP = "rtmp://send1a.douyutv.com/live"
 
-    def __init__(self, folder, rtmpURL=None, code=None):
+    def __init__(self, handler, folder, rtmpURL=None, code=None):
         super(FFmpegManager, self).__init__()
-        print folder, rtmpURL, code
+        self.handler = handler
         self.folder = folder
         self.DOUYU_RTMP = rtmpURL
         self.DOUYU_Code = code
-        self.killFFmpeg()
+        self.breakFlag = False
         self.play(self.folder)
 
     def getRTMPUrl(self):
         return os.path.join(self.DOUYU_RTMP, self.DOUYU_Code)
 
-    @classmethod
-    def killFFmpeg(cls):
+    def killFFmpeg(self):
+        self.breakFlag = True
         cmd = "killall ffmpeg"
-        p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-        p.wait()
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 
-    @classmethod
-    def startFFmpeg(cls, cmd):
+    def startFFmpeg(self, cmd):
         print cmd
+        self.handler.send({"cmd": cmd})
         p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-        p.wait()
-        sout = p.stdout.readlines()
-        serr = p.stderr.readlines()
 
     def play(self, folder):
-        print folder
         movies = GetFileFromThisRootDir(folder, ['mp4'])
-        print(movies)
         rtmpURL = self.getRTMPUrl()
-        print(movies, rtmpURL)
         movies.append("http://dragondjf.github.io/iris/vedio/iris.mp4")
-        while True:
-            for movie in  movies:
-                cmd = u'''ffmpeg -re -i \"%s\" -vcodec copy -acodec copy -f flv \"%s\"''' % (unicode(movie), unicode(rtmpURL))
-                try:
-                    self.startFFmpeg(cmd)
-                except Exception, e:
-                    print e
-                    continue
+
+        for movie in  movies:
+            if self.breakFlag:
+                break
+            cmd = u'''ffmpeg -re -i \"%s\" -vcodec copy -acodec copy -f flv \"%s\"''' % (unicode(movie), unicode(rtmpURL))
+            try:
+                self.startFFmpeg(cmd)
+            except Exception, e:
+                print e
 
 
 class BaseHandler(object):
@@ -125,13 +119,18 @@ class FFmpegHandler(BaseHandler):
     @registerHandler
     def __init__(self, rpcUrl=None, connection=None):
         super(FFmpegHandler, self).__init__(rpcUrl, connection)
+        self.ffmpegManager = None
 
     def handleRPC(self, obj):
         if u'rpcUrl' in obj:
             if obj['rpcUrl'] == unicode(self.rpcUrl):
                 rtmpURL = obj[u'rpcMessage'][u'rtmp-url']
                 rtmpCode = obj[u'rpcMessage'][u'rtmp-code']
-                FFmpegManager(sys.argv[1], rtmpURL, rtmpCode)
+                if self.ffmpegManager:
+                    print ("==============")
+                    self.ffmpegManager.killFFmpeg()
+                self.ffmpegManager = FFmpegManager(self, sys.argv[1], rtmpURL, rtmpCode)
+
 
 class LogHandler(BaseHandler):
 
