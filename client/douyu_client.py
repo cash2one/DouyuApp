@@ -54,10 +54,6 @@ class FFmpegManager(object):
         return os.path.join(self.DOUYU_RTMP, self.DOUYU_Code)
 
     @classmethod
-    def newCommand(cls, src, rtmp):
-        return "ffmpeg -re -i \"%s\" -vcodec copy -acodec copy -f flv \"%s\"" % (src, rtmp)
-     
-    @classmethod
     def killFFmpeg(cls):
         cmd = "killall supervisord&& killall ffmpeg"
         p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
@@ -80,7 +76,7 @@ class FFmpegManager(object):
         movies.append("http://dragondjf.github.io/iris/vedio/iris.mp4")
         while True:
             for movie in  movies:
-                cmd = self.newCommand(movie, rtmpURL)
+                cmd = "ffmpeg -re -i \"%s\" -vcodec copy -acodec copy -f flv \"%s\"" % (movie, rtmpURL)
                 try:
                     self.startFFmpeg(cmd)
                 except Exception, e:
