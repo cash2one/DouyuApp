@@ -3,29 +3,63 @@ $(document).ready(function() {
     if (!window.console.log) window.console.log = function() {};
 
     $("#Start").on("click", function() {
-        var url = $("#rtmp-url").val();
-        var code = $("#rtmp-code").val();
-        var message = {
-            "rtmp-url": url,
-            "rtmp-code": code
+        console.log($("#Start").text())
+        if ($("#Start").text() === "Start"){
+            var url = $("#rtmp-url").val();
+            var code = $("#rtmp-code").val();
+            var message = {
+                "rtmp-url": url,
+                "rtmp-code": code
+            }
+            var rpc = websocketClient.formatMessage("startDouyuTv", message);
+            websocketClient.send(rpc);
         }
-        updater.socket.send(JSON.stringify(message));
     });
-    updater.start();
+    websocketClient.init();
 })
 
-var updater = {
-    socket: null,
+var websocketClient = {
+    ws: null,
 
-    start: function() {
-        var url = "ws://" + location.host + "/chatsocket";
-        updater.socket = new WebSocket(url);
-        updater.socket.onmessage = function(event) {
-            updater.showMessage(JSON.parse(event.data));
-        }
+    init: function() {
+        var url = "ws://" + location.host + "/websocket";
+        this.ws = new WebSocket(url);
+        this.ws.onopen = this.onopen;
+        this.ws.onmessage = this.onmessage
+        this.ws.onerror = this.onerror;
+        this.ws.onclose = this.onclose;
     },
 
-    showMessage: function(message) {
-        console.log(message);
+    send: function(message){
+        if (this.ws){
+            this.ws.send(message);
+        }
+    }, 
+
+    onopen: function() {
+        var message = websocketClient.formatMessage("onopen", "WebSocket onopen");
+        this.send(message);
+    },
+
+    onmessage: function(event) {
+        console.log(JSON.parse(event.data));
+    },
+
+    onclose: function(event){
+        console.log("WebSocketClose!", event);
+    }, 
+
+    onerror: function(event){
+        console.log("WebSocketError!", event);
+    },
+
+    formatMessage: function(rpcName, rpcMessage){
+        var rpc = {
+            "rpcVersion": "1.0",
+            "rpcUrl": "/FFmpegHandler",
+            "rpcName": rpcName,
+            "rpcMessage": rpcMessage,
+        };
+        return JSON.stringify(rpc);
     }
 };

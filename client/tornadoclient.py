@@ -16,7 +16,7 @@ class MyClient(TornadoWebSocketClient):
      def closed(self, code, reason=None):
          ioloop.IOLoop.instance().stop()
 
-ws = MyClient('ws://localhost:9000/echo', protocols=['http-only', 'chat'])
+ws = MyClient('ws://localhost:8888/echo', protocols=['http-only', 'chat'])
 ws.connect()
 
 ioloop.IOLoop.instance().start()

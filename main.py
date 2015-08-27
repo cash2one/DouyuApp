@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+ #!/usr/bin/env python
 #
 # Copyright 2009 Facebook
 #
@@ -32,11 +32,11 @@ from tornado.options import define, options
 define("port", default=8888, help="run on the given port", type=int)
 
 
-class Application(tornado.web.Application):
+class DApplication(tornado.web.Application):
     def __init__(self):
         handlers = [
-            (r"/", MainHandler),
-            (r"/chatsocket", ChatSocketHandler),
+            (r"/", DMainHandler),
+            (r"/websocket", DWebSocketManager),
         ]
         settings = dict(
             cookie_secret="__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",
@@ -48,11 +48,12 @@ class Application(tornado.web.Application):
         tornado.web.Application.__init__(self, handlers, **settings)
 
 
-class MainHandler(tornado.web.RequestHandler):
+class DMainHandler(tornado.web.RequestHandler):
     def get(self):
         self.render("index.html")
 
-class ChatSocketHandler(tornado.websocket.WebSocketHandler):
+
+class DWebSocketManager(tornado.websocket.WebSocketHandler):
     waiters = set()
     cache = []
     cache_size = 200
@@ -60,12 +61,6 @@ class ChatSocketHandler(tornado.websocket.WebSocketHandler):
     def get_compression_options(self):
         # Non-None enables compression with default options.
         return {}
-
-    def open(self):
-        ChatSocketHandler.waiters.add(self)
-
-    def on_close(self):
-        ChatSocketHandler.waiters.remove(self)
 
     @classmethod
     def update_cache(cls, chat):
@@ -82,18 +77,27 @@ class ChatSocketHandler(tornado.websocket.WebSocketHandler):
             except:
                 logging.error("Error sending message", exc_info=True)
 
-    def on_message(self, message):
-        logging.info("got message %r", message)
-        obj = tornado.escape.json_decode(message)
-        print obj
+    def open(self):
+        logging.info("waiter id: %d opened" % id(self))
+        self.waiters.add(self)
 
-        ChatSocketHandler.update_cache(obj)
-        ChatSocketHandler.send_updates(obj)
+    def on_close(self):
+        logging.info("waiter id: %d closed" % id(self))
+        self.waiters.remove(self)
+
+    def on_message(self, message):
+        logging.info("got message %s", message)
+        try:
+            obj = tornado.escape.json_decode(message)
+            self.update_cache(obj)
+            self.send_updates(obj)
+        except Exception, e:
+            logging.info("unhandle not json format data")
 
 
 def main():
     tornado.options.parse_command_line()
-    app = Application()
+    app = DApplication()
     app.listen(options.port)
     tornado.ioloop.IOLoop.current().start()
 
