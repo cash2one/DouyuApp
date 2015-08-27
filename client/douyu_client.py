@@ -1,11 +1,32 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+import os
+import sys
+import glob
+import subprocess
 import logging
 from tornado import ioloop
 import tornado.escape
 from tornado.websocket import websocket_connect
 
 Handlers = {}
+
+# 获取指定路径下所有指定后缀的文件
+# dir 指定路径
+# ext 指定后缀，链表&不需要带点 或者不指定。例子：['xml', 'java']
+def GetFileFromThisRootDir(dirFolder,ext = None):
+    allfiles = []
+    needExtFilter = (ext != None)
+    for root,dirs,files in os.walk(dirFolder):
+        for filespath in files:
+            filepath = os.path.join(root, filespath)
+            extension = os.path.splitext(filepath)[1][1:]
+            if needExtFilter and extension in ext:
+                allfiles.append(filepath)
+            elif not needExtFilter:
+                pass
+    return allfiles
 
 def registerHandler(func):
     def wrapper(*args, **kwargs):
@@ -14,6 +35,55 @@ def registerHandler(func):
         Handlers[rpcUrl] = self
         func(*args, **kwargs)
     return wrapper
+
+
+class FFmpegManager(object):
+    
+    DOUYU_RTMP = "rtmp://send1a.douyutv.com/live"
+
+    def __init__(self, folder, rtmpURL=None, code=None):
+        super(FFmpegManager, self).__init__()
+        print folder, rtmpURL, code
+        self.folder = folder
+        self.DOUYU_RTMP = rtmpURL
+        self.DOUYU_Code = code
+        self.killFFmpeg()
+        self.play(self.folder)
+
+    @classmethod
+    def getRTMPUrl(cls):
+        return os.path.join(self.DOUYU_RTMP, self.DOUYU_Code)
+
+    @classmethod
+    def newCommand(self, src, rtmp):
+        return "ffmpeg -re -i \"%s\" -vcodec copy -acodec copy -f flv \"%s\"" % (src, rtmp)
+     
+    @classmethod
+    def killFFmpeg(cls):
+        cmd = "killall supervisord&& killall ffmpeg"
+        p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        p.wait()
+
+    @classmethod
+    def startFFmpeg(cls, cmd):
+        print cmd
+        p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        p.wait()
+        sout = p.stdout.readlines()
+        serr = p.stderr.readlines()
+
+    def play(self, folder):
+        movies = GetFileFromThisRootDir(folder, ['mp4'])
+        rtmpURL = self.getRTMPUrl()
+        movies.append("http://dragondjf.github.io/iris/vedio/iris.mp4")
+        while True:
+            for movie in  movies:
+                cmd = self.newCommand(movie, rtmpURL)
+                try:
+                    self.startFFmpeg(cmd)
+                except Exception, e:
+                    print e
+                    continue
 
 
 class BaseHandler(object):
@@ -45,8 +115,8 @@ class BaseHandler(object):
         self._connection = value
 
     def send(self, message):
-        logging.info("2142141244")
-        self._connection.write_message("message")
+        obj = tornado.escape.json_encode(message)
+        self._connection.write_message(obj)
 
     def handleRPC(self, message):
         pass
@@ -58,10 +128,12 @@ class FFmpegHandler(BaseHandler):
     def __init__(self, rpcUrl=None, connection=None):
         super(FFmpegHandler, self).__init__(rpcUrl, connection)
 
-    def handleRPC(self, message):
-        print message, "handleRPC======"
-        self.send(message)
-
+    def handleRPC(self, obj):
+        if u'rpcUrl' in obj:
+            if obj['rpcUrl'] == unicode(self.rpcUrl):
+                rtmpURL = obj[u'rpcMessage'][u'rtmp-url']
+                rtmpCode = obj[u'rpcMessage'][u'rtmp-code']
+                FFmpegManager(sys.argv[1], rtmpURL, rtmpCode)
 
 class LogHandler(BaseHandler):
 
@@ -75,7 +147,7 @@ class LogHandler(BaseHandler):
 
 class WebsocketClient(object):
 
-    ws_url = "ws://127.0.0.1:8888/websocket"
+    ws_url = "ws://127.0.0.1:8888/websocket?client=Raspberrypi"
 
     websocketConnection = None
 
@@ -92,9 +164,7 @@ class WebsocketClient(object):
     def on_message_callback(cls, message):
         try:
             obj = tornado.escape.json_decode(message)
-            # cls.websocketConnection.write_message(message)
             cls.handleMessage(obj)
-            print obj, "========="
         except Exception, e:
             logging.info("unhandle not json format data")
 
@@ -102,8 +172,6 @@ class WebsocketClient(object):
     def callback(cls, connection):
         cls.websocketConnection = connection.result()
         cls.registerHandlers(cls.handlers)
-
-        print(cls.handlers)
 
     @classmethod
     def registerHandler(cls, rpcUrl, handler):
@@ -118,16 +186,12 @@ class WebsocketClient(object):
 
     @classmethod
     def handleMessage(cls, obj):
-        print obj, "handleMessage", type(obj),  u"rpcUrl" in obj
         if u"rpcUrl" in obj:
             rpcUrl = obj[u'rpcUrl']
-            print ("===============", rpcUrl, type(rpcUrl), rpcUrl in WebsocketClient.handlers)
             if rpcUrl in WebsocketClient.handlers:
-
                 handler = WebsocketClient.handlers[rpcUrl]
-                print handler
+                print obj
                 handler.handleRPC(obj)
-                print rpcUrl, "/////////",handler,  obj
         else:
             logging.info("message has no field [rpcUrl]")
 

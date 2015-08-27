@@ -38,7 +38,7 @@ var websocketClient = {
 
     onopen: function() {
         var message = websocketClient.formatMessage("onopen", "WebSocket onopen");
-        this.send(message);
+        console.log("WebSocketOpen!");
     },
 
     onmessage: function(event) {

@@ -1,4 +1,4 @@
- #!/usr/bin/env python
+#!/usr/bin/env python
 #
 # Copyright 2009 Facebook
 #
@@ -13,10 +13,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-"""Simplified chat demo for websockets.
 
-Authentication, error handling, etc are left as an exercise for the reader :)
-"""
 
 import logging
 import tornado.escape
@@ -32,11 +29,11 @@ from tornado.options import define, options
 define("port", default=8888, help="run on the given port", type=int)
 
 
-class DApplication(tornado.web.Application):
+class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
-            (r"/", DMainHandler),
-            (r"/websocket", DWebSocketManager),
+            (r"/", MainHandler),
+            (r"/websocket", WebSocketHandler),
         ]
         settings = dict(
             cookie_secret="__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",
@@ -48,56 +45,49 @@ class DApplication(tornado.web.Application):
         tornado.web.Application.__init__(self, handlers, **settings)
 
 
-class DMainHandler(tornado.web.RequestHandler):
+class MainHandler(tornado.web.RequestHandler):
     def get(self):
         self.render("index.html")
 
-
-class DWebSocketManager(tornado.websocket.WebSocketHandler):
+class WebSocketHandler(tornado.websocket.WebSocketHandler):
     waiters = set()
     cache = []
-    cache_size = 200
 
     def get_compression_options(self):
         # Non-None enables compression with default options.
         return {}
 
-    @classmethod
-    def update_cache(cls, chat):
-        cls.cache.append(chat)
-        if len(cls.cache) > cls.cache_size:
-            cls.cache = cls.cache[-cls.cache_size:]
-
-    @classmethod
-    def send_updates(cls, chat):
-        logging.info("sending message to %d waiters", len(cls.waiters))
-        for waiter in cls.waiters:
-            try:
-                waiter.write_message(chat)
-            except:
-                logging.error("Error sending message", exc_info=True)
-
     def open(self):
-        logging.info("waiter id: %d opened" % id(self))
-        self.waiters.add(self)
+        WebSocketHandler.waiters.add(self)
+        logging.info(self.request.remote_ip)
 
     def on_close(self):
-        logging.info("waiter id: %d closed" % id(self))
-        self.waiters.remove(self)
+        WebSocketHandler.waiters.remove(self)
+
+    @classmethod
+    def update_cache(cls, obj, self):
+        cls.cache.append(obj)
+
+    @classmethod
+    def send_updates(cls, obj, self):
+        logging.info("sending message to %d waiters", len(cls.waiters))
+        for waiter in cls.waiters:
+            if waiter is not self:
+                try:
+                    waiter.write_message(obj)
+                except:
+                    logging.error("Error sending message", exc_info=True)
 
     def on_message(self, message):
-        logging.info("got message %s", message)
-        try:
-            obj = tornado.escape.json_decode(message)
-            self.update_cache(obj)
-            self.send_updates(obj)
-        except Exception, e:
-            logging.info("unhandle not json format data")
+        logging.info("got message %s %r" % (self.request.full_url(), message))
+        obj = tornado.escape.json_decode(message)
+        WebSocketHandler.update_cache(obj, self)
+        WebSocketHandler.send_updates(obj, self)
 
 
 def main():
     tornado.options.parse_command_line()
-    app = DApplication()
+    app = Application()
     app.listen(options.port)
     tornado.ioloop.IOLoop.current().start()
 
