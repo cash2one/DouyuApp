@@ -60,7 +60,8 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
     def open(self):
         WebSocketHandler.waiters.add(self)
-        if self.obj:
+        print "=======", WebSocketHandler.obj
+        if WebSocketHandler.obj:
             self.write_message(self.obj)
 
         logging.info(self.request.remote_ip)
