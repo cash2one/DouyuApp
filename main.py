@@ -59,6 +59,9 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
     def open(self):
         WebSocketHandler.waiters.add(self)
+        if self.obj:
+            self.write_message(self.obj)
+
         logging.info(self.request.remote_ip)
 
     def on_close(self):
@@ -81,6 +84,10 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def on_message(self, message):
         logging.info("got message %s %r" % (self.request.full_url(), message))
         obj = tornado.escape.json_decode(message)
+
+        if  "DOUYU_Code" in obj:
+            self.obj = obj
+
         WebSocketHandler.update_cache(obj, self)
         WebSocketHandler.send_updates(obj, self)
 
