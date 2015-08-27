@@ -76,7 +76,7 @@ class FFmpegManager(object):
         movies.append("http://dragondjf.github.io/iris/vedio/iris.mp4")
         while True:
             for movie in  movies:
-                cmd = "ffmpeg -re -i \"%s\" -vcodec copy -acodec copy -f flv \"%s\"" % (movie, rtmpURL)
+                cmd = '''ffmpeg -re -i \"%s\" -vcodec copy -acodec copy -f flv \"%s\"''' % (movie, rtmpURL)
                 try:
                     self.startFFmpeg(cmd)
                 except Exception, e:
