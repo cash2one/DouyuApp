@@ -55,7 +55,7 @@ class FFmpegManager(object):
 
     @classmethod
     def killFFmpeg(cls):
-        cmd = "killall supervisord&& killall ffmpeg"
+        cmd = "killall ffmpeg"
         p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         p.wait()
 
@@ -76,7 +76,7 @@ class FFmpegManager(object):
         movies.append("http://dragondjf.github.io/iris/vedio/iris.mp4")
         while True:
             for movie in  movies:
-                cmd = '''ffmpeg -re -i \"%s\" -vcodec copy -acodec copy -f flv \"%s\"''' % (movie, rtmpURL)
+                cmd = u'''ffmpeg -re -i \"%s\" -vcodec copy -acodec copy -f flv \"%s\"''' % (unicode(movie), unicode(rtmpURL))
                 try:
                     self.startFFmpeg(cmd)
                 except Exception, e:
