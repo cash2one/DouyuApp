@@ -48,6 +48,7 @@ class FFmpegManager(object):
         self.DOUYU_RTMP = rtmpURL
         self.DOUYU_Code = code
         self.breakFlag = False
+        self.movies = []
         self.play(self.folder)
 
     def getRTMPUrl(self):
@@ -60,15 +61,19 @@ class FFmpegManager(object):
 
     def startFFmpeg(self, cmd):
         print cmd
-        self.handler.send({"cmd": cmd})
+        self.handler.send({
+            "cmd": cmd,
+            "movies": self.movies,
+            "DOUYU_Code": self.DOUYU_Code
+        })
         p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 
     def play(self, folder):
-        movies = GetFileFromThisRootDir(folder, ['mp4'])
+        self.movies = GetFileFromThisRootDir(folder, ['mp4'])
         rtmpURL = self.getRTMPUrl()
-        movies.append("http://dragondjf.github.io/iris/vedio/iris.mp4")
+        self.movies.append("http://dragondjf.github.io/iris/vedio/iris.mp4")
 
-        for movie in  movies:
+        for movie in self.movies:
             if self.breakFlag:
                 break
             cmd = u'''ffmpeg -re -i \"%s\" -vcodec copy -acodec copy -f flv \"%s\"''' % (unicode(movie), unicode(rtmpURL))

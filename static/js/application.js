@@ -42,7 +42,11 @@ var websocketClient = {
     },
 
     onmessage: function(event) {
-        console.log(JSON.parse(event.data));
+        obj = JSON.parse(event.data)
+        if (obj.DOUYU_Code){
+            $("#rtmp-code").val(obj.DOUYU_Code);
+        }
+        console.log(obj);
     },
 
     onclose: function(event){
