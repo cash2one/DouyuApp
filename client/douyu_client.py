@@ -147,7 +147,7 @@ class LogHandler(BaseHandler):
 
 class WebsocketClient(object):
 
-    ws_url = "ws://127.0.0.1:8888/websocket?client=Raspberrypi"
+    ws_url = "ws://106.186.19.60:8888/websocket?client=Raspberrypi"
 
     websocketConnection = None
 
