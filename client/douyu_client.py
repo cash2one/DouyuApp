@@ -50,8 +50,7 @@ class FFmpegManager(object):
         self.killFFmpeg()
         self.play(self.folder)
 
-    @classmethod
-    def getRTMPUrl(cls):
+    def getRTMPUrl(self):
         return os.path.join(self.DOUYU_RTMP, self.DOUYU_Code)
 
     @classmethod
@@ -73,8 +72,11 @@ class FFmpegManager(object):
         serr = p.stderr.readlines()
 
     def play(self, folder):
+        print folder
         movies = GetFileFromThisRootDir(folder, ['mp4'])
+        print(movies)
         rtmpURL = self.getRTMPUrl()
+        print(movies, rtmpURL)
         movies.append("http://dragondjf.github.io/iris/vedio/iris.mp4")
         while True:
             for movie in  movies:
