@@ -88,7 +88,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         obj = tornado.escape.json_decode(message)
 
         if  "DOUYU_Code" in obj:
-            self.obj = obj
+            WebSocketHandler.obj = obj
 
         WebSocketHandler.update_cache(obj, self)
         WebSocketHandler.send_updates(obj, self)
